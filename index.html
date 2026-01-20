@@ -145,10 +145,19 @@
         <div class="flex-1 flex overflow-hidden">
             <!-- Main Content -->
             <main class="flex-1 flex flex-col overflow-hidden relative bg-slate-100">
+                <!-- Back to Today Button -->
+                <button @click="scrollToToday" class="absolute bottom-6 right-6 z-[60] bg-slate-800 text-white shadow-lg hover:bg-slate-700 w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 border border-slate-600 group" title="今日に戻る">
+                    <div class="flex flex-col items-center leading-none">
+                        <i class="ph ph-calendar-check text-xl mb-0.5"></i>
+                        <span class="text-[9px] font-bold">Today</span>
+                    </div>
+                </button>
+
                 <div class="flex-1 overflow-auto relative custom-scrollbar">
                     
                     <!-- Sticky Header Area -->
-                    <div class="sticky-top-area shadow-memo min-w-full z-30">
+                    <!-- Boundary Improvement: Added border-b-2 and border-slate-300 for clearer separation -->
+                    <div class="sticky-top-area shadow-lg border-b-2 border-slate-300 min-w-full z-30">
                         <!-- Column Headers -->
                         <div class="flex border-b border-border bg-white">
                             <div class="w-[60px] shrink-0 border-r border-border bg-slate-50 flex items-end justify-center pb-2 sticky-date z-40 cursor-pointer hover:bg-slate-100 transition-colors group/date" title="日付ジャンプ" @click="openDatePicker">
@@ -211,7 +220,11 @@
                                             <span :class="{'text-amber-900': task.isGoal}">{{ task.title }}</span>
                                             <span v-if="task.range > 1" class="text-[10px] text-slate-400 bg-slate-100 px-1 rounded flex items-center whitespace-nowrap"><i class="ph ph-arrows-left-right mr-0.5"></i> {{task.range}}日</span>
                                         </div>
-                                        <!-- アイコン削除: ここにあったホバー時のボタン群を削除しました -->
+                                        <!-- Hover Controls Added (Return & Delete) -->
+                                        <div class="flex justify-end gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity absolute bottom-1 right-1 bg-white/95 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 p-0.5">
+                                            <button @click.stop="returnToLibrary(task)" title="メモに戻す" class="text-slate-400 hover:text-slate-600 text-xs p-1 rounded hover:bg-slate-100"><i class="ph ph-arrow-u-up-left text-sm"></i></button>
+                                            <button @click.stop="deleteTask(task.id)" title="削除" class="text-slate-400 hover:text-red-500 text-xs p-1 rounded hover:bg-red-50"><i class="ph ph-trash text-sm"></i></button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div @click="openTaskModal(day.dateStr, col.id)" class="h-6 -mt-1 mx-2 mb-1 rounded-full flex items-center justify-center cursor-pointer hover:bg-slate-200 cell-add-btn text-slate-300 hover:text-primary transition-all z-20 border border-transparent hover:border-slate-300">
@@ -239,8 +252,8 @@
                 
                 <div class="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-8 bg-slate-50">
                     <div v-for="col in columns" :key="col.id" class="space-y-2.5">
-                        <!-- Accordion Header -->
-                        <div @click="toggleProject(col.id)" class="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider sticky top-0 bg-slate-50 py-1.5 z-10 border-b border-slate-200 cursor-pointer hover:text-primary transition">
+                        <!-- Accordion Header: uppercase class removed -->
+                        <div @click="toggleProject(col.id)" class="flex items-center justify-between text-[11px] font-bold text-slate-500 tracking-wider sticky top-0 bg-slate-50 py-1.5 z-10 border-b border-slate-200 cursor-pointer hover:text-primary transition">
                             <span class="truncate pr-2">{{ col.title }}</span>
                             <i class="ph" :class="expandedProjects[col.id] ? 'ph-caret-down' : 'ph-caret-right'"></i>
                         </div>
@@ -260,8 +273,8 @@
                                 </div>
                             </div>
 
-                            <!-- Library Tasks (Shrinked Height) -->
-                            <div v-for="task in getLibraryTasks(col.id)" :key="task.id" :data-id="task.id" class="task-card rounded-xl px-3.5 py-1.5 text-xs group/card select-none relative flex items-center justify-between gap-3 border border-slate-200 hover:border-slate-300 bg-white">
+                            <!-- Library Tasks (Further Shrinked Height: py-1.5 -> py-1) -->
+                            <div v-for="task in getLibraryTasks(col.id)" :key="task.id" :data-id="task.id" class="task-card rounded-xl px-3 py-1 text-xs group/card select-none relative flex items-center justify-between gap-3 border border-slate-200 hover:border-slate-300 bg-white">
                                 <div class="font-medium text-slate-700 leading-tight flex items-center gap-2 flex-1 truncate">
                                     <span v-if="task.isGoal" class="text-amber-500"><i class="ph ph-flag-banner-fill"></i></span>
                                     <span class="truncate">{{ task.title }}</span>
@@ -611,6 +624,14 @@
                     else alert('範囲外です');
                 };
 
+                const scrollToToday = () => {
+                    const todayStr = dayjs().format('YYYY-MM-DD');
+                    const el = document.getElementById(`day-${todayStr}`);
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                };
+
                 const loadData = () => {
                     loading.value = true;
                     // Ensure Auth is ready before querying if possible, but snaphot listener will handle it when connection opens
@@ -783,7 +804,7 @@
                     openBulkAddModal, saveBulkTasks, openSetManagerModal, createNewSet, selectSet, addTaskToSet, setGoal, saveSet, deleteSet,
                     confirmApplySet, applySetToCalendar, updateColumn, quickAdd, returnToLibrary, toggleProject,
                     getTasksForDay, getMemoTasks, getLibraryTasks, getLibraryItems, getTaskSets, getColumnTitle,
-                    isToday, getDayDiff, openDatePicker, onDateJump, handleTitleClick, confirmDelete, executeDelete
+                    isToday, getDayDiff, openDatePicker, onDateJump, scrollToToday, handleTitleClick, confirmDelete, executeDelete
                 };
             }
         }).mount('#app');
