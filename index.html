@@ -69,7 +69,6 @@
             -webkit-font-smoothing: antialiased;
         }
         
-        .sticky-top-area { position: sticky; top: 0; z-index: 30; background-color: #F8FAFC; }
         .sticky-date { position: sticky; left: 0; z-index: 20; border-right: 1px solid #CBD5E1; }
 
         .task-card {
@@ -152,10 +151,15 @@
                     </div>
                 </button>
 
-                <div class="flex-1 overflow-auto relative custom-scrollbar">
-                    
-                    <!-- Sticky Header Area -->
-                    <div class="sticky-top-area shadow-md border-b-2 border-slate-300 min-w-full z-30">
+                <!-- 
+                   Layout Update: 
+                   Separated the header (columns & memos) from the scrollable calendar area.
+                   This prevents the "content going under header" issue completely.
+                -->
+                
+                <!-- Fixed Header Section (Columns & Memo) -->
+                <div ref="headerContainer" class="flex-none shadow-md border-b-2 border-slate-300 z-30 bg-slate-50 overflow-hidden">
+                     <div class="min-w-full">
                         <!-- Column Headers -->
                         <div class="flex border-b border-border bg-white">
                             <div class="w-[60px] shrink-0 border-r border-border bg-slate-50 flex items-end justify-center pb-2 sticky-date z-40 cursor-pointer hover:bg-slate-100 transition-colors group/date" title="日付ジャンプ" @click="openDatePicker">
@@ -175,14 +179,14 @@
                         </div>
 
                         <!-- Memo Area -->
-                        <div class="flex border-b border-slate-200 bg-white relative z-30 shadow-sm">
+                        <div class="flex bg-white relative z-30">
                             <div class="w-[60px] shrink-0 border-r border-border bg-slate-50 sticky-date z-40"></div>
                             <div v-for="col in columns" :key="col.id" class="flex-1 min-w-[250px] border-r border-border p-1.5">
                                 <div class="text-[9px] font-bold text-slate-400 mb-1 pl-1 tracking-wide flex items-center gap-1">
                                      メモ
                                 </div>
                                 <div :id="`memo-area-${col.id}`" class="min-h-[10px] space-y-1 p-0.5 transition-all rounded-md" data-type="memo" :data-col="col.id">
-                                    <div v-for="task in getMemoTasks(col.id)" :key="task.id" :data-id="task.id" class="task-card rounded-md px-2 py-1.5 text-xs cursor-grab group/card relative flex items-center justify-between gap-1 border border-slate-200 hover:border-primary/40 bg-white shadow-sm" @click="openTaskModal(null, col.id, null, task)">
+                                    <div v-for="task in getMemoTasks(col.id)" :key="task.id" :data-id="task.id" class="task-card rounded px-1.5 py-1 text-xs cursor-grab group/card relative flex items-center justify-between gap-1 border border-slate-200 hover:border-primary/40 bg-white shadow-sm" @click="openTaskModal(null, col.id, null, task)">
                                         <div class="font-medium text-slate-700 leading-tight flex-1 truncate">{{ task.title }}</div>
                                         <div class="flex gap-1 shrink-0 opacity-0 group-hover/card:opacity-100 transition-opacity">
                                             <button @click.stop="quickAdd(task)" title="今日に追加" class="text-slate-400 hover:text-primary"><i class="ph ph-plus-circle text-sm"></i></button>
@@ -195,8 +199,11 @@
                                 </button>
                             </div>
                         </div>
-                    </div>
+                     </div>
+                </div>
 
+                <!-- Scrollable Calendar Area -->
+                <div ref="calendarContainer" class="flex-1 overflow-auto relative custom-scrollbar" @scroll="syncScroll">
                     <!-- Calendar Grid -->
                     <div class="min-w-full pb-24 bg-slate-100">
                         <div v-for="day in calendarDays" :key="day.dateStr" :id="`day-${day.dateStr}`" class="flex border-b border-border group/row min-h-cell transition-colors w-full" :class="{'bg-slate-50': !isToday(day.dateStr), 'bg-sky-50/40': isToday(day.dateStr), 'month-divider': day.dayNum === 1}">
@@ -213,7 +220,7 @@
                             <div v-for="col in columns" :key="col.id" class="flex-1 min-w-[250px] border-r border-border relative bg-transparent flex flex-col p-1.5 transition-colors">
                                 <div :id="`cell-${col.id}-${day.dateStr}`" class="flex-1 w-full space-y-2 relative z-10" data-type="scheduled" :data-col="col.id" :data-date="day.dateStr">
                                     <!-- Loop modified to handle multi-day display -->
-                                    <div v-for="task in getTasksForDay(col.id, day.dateStr)" :key="`${task.id}-${day.dateStr}`" :data-id="task.id" class="task-card rounded-xl px-3 py-2.5 text-xs group/card select-none relative flex flex-col gap-1 shadow-sm" :class="task.isGoal ? 'bg-white border-amber-300 bg-amber-50/50 border-l-[4px] border-l-amber-400' : 'bg-white border-slate-300'" @click="openTaskModal(day.dateStr, col.id, null, task)">
+                                    <div v-for="task in getTasksForDay(col.id, day.dateStr)" :key="`${task.id}-${day.dateStr}`" :data-id="task.id" class="task-card rounded-lg px-2 py-1.5 text-xs group/card select-none relative flex flex-col gap-1 shadow-sm" :class="task.isGoal ? 'bg-white border-amber-300 bg-amber-50/50 border-l-[4px] border-l-amber-400' : 'bg-white border-slate-300'" @click="openTaskModal(day.dateStr, col.id, null, task)">
                                         <div class="font-medium text-slate-800 leading-snug flex items-start gap-1.5">
                                             <span v-if="task.isGoal" class="text-amber-500 flex-shrink-0 mt-0.5 drop-shadow-sm"><i class="ph ph-flag-banner-fill"></i></span>
                                             <span :class="{'text-amber-900': task.isGoal}">{{ task.title }}</span>
@@ -263,7 +270,7 @@
                         <!-- Accordion Content -->
                         <div v-show="expandedProjects[col.id]" class="space-y-2" :id="`library-${col.id}`" data-type="library" :data-col="col.id">
                             <!-- Sets -->
-                            <div v-for="set in getTaskSets(col.id)" :key="set.id" :data-id="set.id" @click="confirmApplySet(set)" class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:border-primary/40 hover:shadow-md cursor-pointer transition flex items-center justify-between gap-3 group relative overflow-hidden">
+                            <div v-for="set in getTaskSets(col.id)" :key="set.id" :data-id="set.id" @click="confirmApplySet(set)" class="bg-white border border-slate-200 rounded-xl p-2 shadow-sm hover:border-primary/40 hover:shadow-md cursor-pointer transition flex items-center justify-between gap-3 group relative overflow-hidden">
                                 <div class="flex items-center gap-3 overflow-hidden relative z-10">
                                     <div class="w-8 h-8 rounded-lg bg-blue-50 text-primary flex items-center justify-center shrink-0 border border-blue-100"><i class="ph ph-stack-simple text-lg"></i></div>
                                     <div class="flex flex-col overflow-hidden">
@@ -275,8 +282,8 @@
                                 </div>
                             </div>
 
-                            <!-- Library Tasks (Further Shrinked Height: py-1.5 -> py-1) -->
-                            <div v-for="task in getLibraryTasks(col.id)" :key="task.id" :data-id="task.id" class="task-card rounded-xl px-3 py-1 text-xs group/card select-none relative flex items-center justify-between gap-3 border border-slate-200 hover:border-slate-300 bg-white" @click="openTaskModal(null, col.id, null, task)">
+                            <!-- Library Tasks (Further Shrinked Height: py-1.5 -> py-0.5) -->
+                            <div v-for="task in getLibraryTasks(col.id)" :key="task.id" :data-id="task.id" class="task-card rounded-lg px-2 py-0.5 text-xs group/card select-none relative flex items-center justify-between gap-3 border border-slate-200 hover:border-slate-300 bg-white" @click="openTaskModal(null, col.id, null, task)">
                                 <div class="font-medium text-slate-700 leading-tight flex items-center gap-2 flex-1 truncate">
                                     <span v-if="task.isGoal" class="text-amber-500"><i class="ph ph-flag-banner-fill"></i></span>
                                     <span class="truncate">{{ task.title }}</span>
@@ -613,6 +620,9 @@
                 const deleteAction = ref(null);
                 const expandedProjects = ref({});
 
+                const headerContainer = ref(null);
+                const calendarContainer = ref(null);
+
                 const getColumnTitle = (id) => columns.value.find(c => c.id === id)?.title || '';
                 const isToday = (d) => d === dayjs().format('YYYY-MM-DD');
                 const getDayDiff = (s, c) => dayjs(c).diff(dayjs(s), 'day');
@@ -653,14 +663,15 @@
                     }
                     calendarDays.value = days;
                     nextTick(() => {
-                        // Scroll logic updated to center yesterday
+                        // Scroll logic updated: use calendarContainer instead of global window scroll
                         const yesterdayStr = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
                         const el = document.getElementById(`day-${yesterdayStr}`);
-                        const container = document.querySelector('.overflow-auto');
+                        const container = calendarContainer.value;
                         
                         if(el && container) {
+                            // Since header is separated, we just scroll to the element's offsetTop within the container
                             container.scrollTop = el.offsetTop;
-                        } else {
+                        } else if (container) {
                             // Fallback
                             const todayIndex = 7;
                             container.scrollTop = (todayIndex - 1) * 91;
@@ -680,6 +691,12 @@
                     const el = document.getElementById(`day-${todayStr}`);
                     if (el) {
                         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                };
+
+                const syncScroll = () => {
+                    if (headerContainer.value && calendarContainer.value) {
+                        headerContainer.value.scrollLeft = calendarContainer.value.scrollLeft;
                     }
                 };
 
@@ -866,6 +883,7 @@
                     loading, columns, tasks, taskSets, calendarDays, modals, editingTask, taskForm, bulkForm, memoForm, libraryForm,
                     taskTitleInput, memoTitleInput, libraryTitleInput, bulkTextInput, datePickerInput, isMobile,
                     selectedSet, applySetDate, deleteTarget, deleteAction, expandedProjects,
+                    headerContainer, calendarContainer, syncScroll,
                     openTaskModal, saveTask, deleteTask, openMemoModal, saveMemo, openLibraryAddModal, saveLibraryItem,
                     openBulkAddModal, saveBulkTasks, openSetManagerModal, createNewSet, selectSet, addTaskToSet, setGoal, saveSet, deleteSet,
                     confirmApplySet, applySetToCalendar, updateColumn, quickAdd, returnToLibrary, toggleProject,
