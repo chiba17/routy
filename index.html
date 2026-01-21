@@ -69,6 +69,7 @@
             -webkit-font-smoothing: antialiased;
         }
         
+        .sticky-top-area { position: sticky; top: 0; z-index: 30; background-color: #F8FAFC; }
         .sticky-date { position: sticky; left: 0; z-index: 20; border-right: 1px solid #CBD5E1; }
 
         .task-card {
@@ -687,10 +688,23 @@
                 };
 
                 const scrollToToday = () => {
-                    const todayStr = dayjs().format('YYYY-MM-DD');
-                    const el = document.getElementById(`day-${todayStr}`);
-                    if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Previous logic: center today
+                    // const todayStr = dayjs().format('YYYY-MM-DD');
+                    // const el = document.getElementById(`day-${todayStr}`);
+                    // if (el) {
+                    //     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // }
+
+                    // New logic: match initCalendar (scroll to yesterday at top)
+                    const yesterdayStr = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+                    const el = document.getElementById(`day-${yesterdayStr}`);
+                    const container = calendarContainer.value;
+                    
+                    if(el && container) {
+                        container.scrollTo({
+                            top: el.offsetTop,
+                            behavior: 'smooth'
+                        });
                     }
                 };
 
