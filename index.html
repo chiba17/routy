@@ -276,7 +276,7 @@
                             </div>
 
                             <!-- Library Tasks (Further Shrinked Height: py-1.5 -> py-1) -->
-                            <div v-for="task in getLibraryTasks(col.id)" :key="task.id" :data-id="task.id" class="task-card rounded-xl px-3 py-1 text-xs group/card select-none relative flex items-center justify-between gap-3 border border-slate-200 hover:border-slate-300 bg-white">
+                            <div v-for="task in getLibraryTasks(col.id)" :key="task.id" :data-id="task.id" class="task-card rounded-xl px-3 py-1 text-xs group/card select-none relative flex items-center justify-between gap-3 border border-slate-200 hover:border-slate-300 bg-white" @click="openTaskModal(null, col.id, null, task)">
                                 <div class="font-medium text-slate-700 leading-tight flex items-center gap-2 flex-1 truncate">
                                     <span v-if="task.isGoal" class="text-amber-500"><i class="ph ph-flag-banner-fill"></i></span>
                                     <span class="truncate">{{ task.title }}</span>
@@ -312,7 +312,8 @@
                             <label class="text-xs font-bold text-slate-500 mb-1 block">タイトル</label>
                             <input ref="taskTitleInput" v-model="taskForm.title" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="タスク名を入力..." @keyup.enter="saveTask">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <!-- Library items only show title and project selection -->
+                        <div class="grid grid-cols-2 gap-3" v-if="!taskForm.inLibrary">
                             <div>
                                 <label class="text-xs font-bold text-slate-500 mb-1 block">日付</label>
                                 <input type="date" v-model="taskForm.date" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-600">
@@ -324,7 +325,15 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div v-else>
+                            <!-- Library mode project selection -->
+                            <label class="text-xs font-bold text-slate-500 mb-1 block">プロジェクト</label>
+                            <select v-model="taskForm.columnId" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-600 bg-white">
+                                <option v-for="col in columns" :key="col.id" :value="col.id">{{ col.title }}</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3" v-if="!taskForm.inLibrary">
                             <div>
                                 <label class="text-xs font-bold text-slate-500 mb-1 block">期間 (日数)</label>
                                 <input type="number" min="1" v-model="taskForm.range" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
@@ -336,7 +345,7 @@
                                 </label>
                             </div>
                         </div>
-                        <div v-if="!editingTask" class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <div v-if="!editingTask && !taskForm.inLibrary" class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                             <label class="flex items-center gap-2 cursor-pointer select-none">
                                 <input type="checkbox" v-model="taskForm.saveToLibrary" class="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary">
                                 <span class="text-xs font-medium text-slate-600">ライブラリにも保存する</span>
@@ -459,25 +468,26 @@
                                                 <input v-model="task.title" class="w-full text-sm font-medium text-slate-700 border-none focus:ring-0 p-0 placeholder-slate-300" placeholder="タスク名">
                                             </div>
                                             <div class="col-span-7 flex items-center justify-end gap-2">
-                                                <!-- 日数設定 (ゴール以外の場合のみ表示) -->
-                                                <div v-if="!task.isGoal" class="flex items-center gap-1">
-                                                    <span class="text-[10px] text-slate-400">前</span>
-                                                    <input type="number" v-model="task.offset" class="w-10 text-center border border-slate-200 rounded text-xs py-1" min="1">
-                                                    <span class="text-[10px] text-slate-400">日</span>
-                                                </div>
-
-                                                <!-- ゴール切り替えボタン -->
-                                                <button 
-                                                    @click="setGoal(idx)" 
-                                                    class="text-[10px] px-3 py-1.5 rounded-lg border transition-all flex items-center justify-center font-bold whitespace-nowrap min-w-[50px]"
-                                                    :class="task.isGoal 
-                                                        ? 'bg-amber-100 text-amber-700 border-amber-200 shadow-sm' 
-                                                        : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600'"
-                                                >
-                                                    ゴール
-                                                </button>
-
-                                                <!-- 削除ボタン -->
+                                                <!-- UPDATED: Toggle button logic -->
+                                                <template v-if="task.isGoal">
+                                                     <span class="text-xs font-bold text-amber-500 bg-amber-50 px-2 py-1 rounded border border-amber-100 flex items-center gap-1"><i class="ph ph-flag-banner-fill"></i> GOAL</span>
+                                                </template>
+                                                <template v-else>
+                                                    <div class="flex items-center gap-1">
+                                                        <span class="text-[10px] text-slate-400">前</span>
+                                                        <input type="number" v-model="task.offset" class="w-10 text-center border border-slate-200 rounded text-xs py-1" min="1">
+                                                        <span class="text-[10px] text-slate-400">日</span>
+                                                    </div>
+                                                    <button 
+                                                        @click="setGoal(idx)" 
+                                                        class="text-[10px] px-3 py-1.5 rounded-lg border transition-all flex items-center justify-center font-bold whitespace-nowrap min-w-[50px]"
+                                                        :class="task.isGoal 
+                                                            ? 'bg-amber-100 text-amber-700 border-amber-200 shadow-sm' 
+                                                            : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600'"
+                                                    >
+                                                        ゴール
+                                                    </button>
+                                                </template>
                                                 <button @click="selectedSet.tasks.splice(idx, 1)" class="text-slate-400 hover:text-red-500 p-1 shrink-0 ml-1"><i class="ph ph-trash text-lg"></i></button>
                                             </div>
                                         </div>
@@ -643,9 +653,18 @@
                     }
                     calendarDays.value = days;
                     nextTick(() => {
-                        const todayIndex = 7; // Since we started 7 days ago
+                        // Scroll logic updated to center yesterday
+                        const yesterdayStr = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+                        const el = document.getElementById(`day-${yesterdayStr}`);
                         const container = document.querySelector('.overflow-auto');
-                        if(container) container.scrollTop = (todayIndex - 1) * 91; // Scroll to yesterday
+                        
+                        if(el && container) {
+                            container.scrollTop = el.offsetTop;
+                        } else {
+                            // Fallback
+                            const todayIndex = 7;
+                            container.scrollTop = (todayIndex - 1) * 91;
+                        }
                     });
                 };
 
@@ -660,7 +679,7 @@
                     const todayStr = dayjs().format('YYYY-MM-DD');
                     const el = document.getElementById(`day-${todayStr}`);
                     if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }
                 };
 
@@ -749,8 +768,14 @@
                 watch([columns, tasks], () => nextTick(initSortable));
 
                 const openTaskModal = (d, c, u, t) => {
-                    if (t) { editingTask.value = t; taskForm.value = { ...t, saveToLibrary: false }; }
-                    else { editingTask.value = null; taskForm.value = { title: '', date: d || '', columnId: c || columns.value[0]?.id, range: 1, saveToLibrary: false, isGoal: false }; }
+                    if (t) { 
+                        editingTask.value = t; 
+                        taskForm.value = { ...t, saveToLibrary: false }; 
+                    } else { 
+                        editingTask.value = null; 
+                        // Set inLibrary: false explicitly for new tasks from calendar
+                        taskForm.value = { title: '', date: d || '', columnId: c || columns.value[0]?.id, range: 1, saveToLibrary: false, isGoal: false, inLibrary: false }; 
+                    }
                     modals.value.task = true;
                     nextTick(() => taskTitleInput.value?.focus());
                 };
@@ -759,6 +784,12 @@
                     if (!taskForm.value.title || !taskForm.value.title.trim()) return;
                     const data = { ...taskForm.value, range: parseInt(taskForm.value.range), inLibrary: false };
                     delete data.saveToLibrary;
+                    
+                    // If editing a library item, preserve inLibrary status
+                    if (taskForm.value.inLibrary) {
+                        data.inLibrary = true;
+                    }
+
                     if (editingTask.value) { await db.collection("tasks").doc(editingTask.value.id).update(data); }
                     else {
                         const newDoc = { ...data, createdAt: new Date() };
