@@ -747,15 +747,15 @@
                     }});
                     columns.value.forEach(col => {
                         const memoEl = document.getElementById(`memo-area-${col.id}`);
-                        if (memoEl) new Sortable(memoEl, { group: 'tasks', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true, onEnd: onDragEnd });
+                        if (memoEl) new Sortable(memoEl, { group: `tasks-${col.id}`, animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true, onEnd: onDragEnd });
                         const libEl = document.getElementById(`library-${col.id}`);
-                        if (libEl) new Sortable(libEl, { group: { name: 'tasks', pull: 'clone', put: false }, sort: true, animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true });
+                        if (libEl) new Sortable(libEl, { group: { name: `tasks-${col.id}`, pull: 'clone', put: false }, sort: true, animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true });
                     });
                     calendarDays.value.forEach(day => {
                         columns.value.forEach(col => {
                             const el = document.getElementById(`cell-${col.id}-${day.dateStr}`);
                             if (el) new Sortable(el, {
-                                group: 'tasks', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
+                                group: `tasks-${col.id}`, animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
                                 onAdd: (evt) => {
                                     const itemType = evt.item.getAttribute('data-type');
                                     const originalId = evt.item.getAttribute('data-id');
@@ -775,7 +775,7 @@
                                                 const newDocRef = db.collection("tasks").doc();
                                                 batch.set(newDocRef, {
                                                     title: t.title,
-                                                    columnId: col.id, // Drop target column
+                                                    columnId: t.columnId || set.columnId || col.id, // Use set's columnId
                                                     date: d.format('YYYY-MM-DD'),
                                                     range: 1,
                                                     isGoal: t.isGoal,
@@ -790,7 +790,7 @@
                                         evt.item.style.display = 'none'; // Hide ghost
                                         
                                         const s = tasks.value.find(t => t.id === originalId);
-                                        if (s) db.collection("tasks").add({ title: s.title, columnId: col.id, date: day.dateStr, range: s.range, isGoal: false, inLibrary: false, createdAt: new Date() });
+                                        if (s) db.collection("tasks").add({ title: s.title, columnId: s.columnId || col.id, date: day.dateStr, range: s.range, isGoal: false, inLibrary: false, createdAt: new Date() });
                                     }
                                 },
                                 onEnd: onDragEnd
