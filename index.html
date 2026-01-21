@@ -212,11 +212,16 @@
                             <!-- Task Columns -->
                             <div v-for="col in columns" :key="col.id" class="flex-1 min-w-[250px] border-r border-border relative bg-transparent flex flex-col p-1.5 transition-colors">
                                 <div :id="`cell-${col.id}-${day.dateStr}`" class="flex-1 w-full space-y-2 relative z-10" data-type="scheduled" :data-col="col.id" :data-date="day.dateStr">
-                                    <div v-for="task in getTasksForDay(col.id, day.dateStr)" :key="task.id" :data-id="task.id" class="task-card rounded-xl px-3 py-2.5 text-xs group/card select-none relative flex flex-col gap-1 shadow-sm" :class="task.isGoal ? 'bg-white border-amber-300 bg-amber-50/50 border-l-[4px] border-l-amber-400' : 'bg-white border-slate-300'" @click="openTaskModal(day.dateStr, col.id, null, task)">
+                                    <!-- Loop modified to handle multi-day display -->
+                                    <div v-for="task in getTasksForDay(col.id, day.dateStr)" :key="`${task.id}-${day.dateStr}`" :data-id="task.id" class="task-card rounded-xl px-3 py-2.5 text-xs group/card select-none relative flex flex-col gap-1 shadow-sm" :class="task.isGoal ? 'bg-white border-amber-300 bg-amber-50/50 border-l-[4px] border-l-amber-400' : 'bg-white border-slate-300'" @click="openTaskModal(day.dateStr, col.id, null, task)">
                                         <div class="font-medium text-slate-800 leading-snug flex items-start gap-1.5">
                                             <span v-if="task.isGoal" class="text-amber-500 flex-shrink-0 mt-0.5 drop-shadow-sm"><i class="ph ph-flag-banner-fill"></i></span>
                                             <span :class="{'text-amber-900': task.isGoal}">{{ task.title }}</span>
-                                            <span v-if="task.range > 1" class="text-[10px] text-slate-400 bg-slate-100 px-1 rounded flex items-center whitespace-nowrap"><i class="ph ph-arrows-left-right mr-0.5"></i> {{task.range}}日</span>
+                                            
+                                            <!-- Current/Total days badge -->
+                                            <span v-if="task.totalDays > 1" class="text-[10px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded flex items-center whitespace-nowrap ml-auto shrink-0 border border-slate-200">
+                                                {{ task.currentDay }}/{{ task.totalDays }}
+                                            </span>
                                         </div>
                                         <!-- Hover Controls (Only Delete) -->
                                         <div class="flex justify-end gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity absolute bottom-1 right-1 bg-white/95 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 p-0.5">
@@ -450,20 +455,31 @@
                                     <div v-for="(task, idx) in selectedSet.tasks" :key="idx" class="bg-white border border-slate-200 rounded-lg p-3 flex items-center gap-3 shadow-sm group">
                                         <div class="text-slate-300 cursor-grab active:cursor-grabbing handle shrink-0"><i class="ph ph-dots-six-vertical text-lg"></i></div>
                                         <div class="flex-1 grid grid-cols-12 gap-3 items-center">
-                                            <div class="col-span-6">
+                                            <div class="col-span-5">
                                                 <input v-model="task.title" class="w-full text-sm font-medium text-slate-700 border-none focus:ring-0 p-0 placeholder-slate-300" placeholder="タスク名">
                                             </div>
-                                            <div class="col-span-3 flex items-center justify-end">
-                                                <span v-if="task.isGoal" class="text-xs font-bold text-amber-500 bg-amber-50 px-2 py-1 rounded border border-amber-100 flex items-center gap-1"><i class="ph ph-flag-banner-fill"></i> GOAL</span>
-                                                <div v-else class="flex items-center gap-1">
+                                            <div class="col-span-7 flex items-center justify-end gap-2">
+                                                <!-- 日数設定 (ゴール以外の場合のみ表示) -->
+                                                <div v-if="!task.isGoal" class="flex items-center gap-1">
                                                     <span class="text-[10px] text-slate-400">前</span>
                                                     <input type="number" v-model="task.offset" class="w-10 text-center border border-slate-200 rounded text-xs py-1" min="1">
                                                     <span class="text-[10px] text-slate-400">日</span>
                                                 </div>
-                                            </div>
-                                            <div class="col-span-3 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition">
-                                                <button @click="setGoal(idx)" class="text-slate-400 hover:text-amber-500" title="ゴールに設定"><i class="ph ph-flag-banner"></i></button>
-                                                <button @click="selectedSet.tasks.splice(idx, 1)" class="text-slate-400 hover:text-red-500"><i class="ph ph-trash"></i></button>
+
+                                                <!-- ゴール切り替えボタン -->
+                                                <button 
+                                                    @click="setGoal(idx)" 
+                                                    class="text-[10px] px-3 py-1.5 rounded-lg border transition-all flex items-center gap-1.5 font-bold whitespace-nowrap"
+                                                    :class="task.isGoal 
+                                                        ? 'bg-amber-100 text-amber-700 border-amber-200 shadow-sm' 
+                                                        : 'bg-white text-slate-400 border-slate-200 hover:border-slate-300 hover:text-slate-600'"
+                                                >
+                                                    <i class="ph" :class="task.isGoal ? 'ph-flag-banner-fill text-amber-500' : 'ph-flag-banner'"></i>
+                                                    {{ task.isGoal ? 'GOAL' : 'ゴール' }}
+                                                </button>
+
+                                                <!-- 削除ボタン -->
+                                                <button @click="selectedSet.tasks.splice(idx, 1)" class="text-slate-400 hover:text-red-500 p-1 shrink-0 ml-1"><i class="ph ph-trash text-lg"></i></button>
                                             </div>
                                         </div>
                                     </div>
@@ -591,7 +607,27 @@
                 const getColumnTitle = (id) => columns.value.find(c => c.id === id)?.title || '';
                 const isToday = (d) => d === dayjs().format('YYYY-MM-DD');
                 const getDayDiff = (s, c) => dayjs(c).diff(dayjs(s), 'day');
-                const getTasksForDay = (c, d) => tasks.value.filter(t => t.columnId === c && t.date === d);
+                
+                // --- 期間表示のロジック修正 ---
+                const getTasksForDay = (c, d) => {
+                    return tasks.value.reduce((acc, t) => {
+                        if (t.columnId !== c || !t.date) return acc;
+                        
+                        const diff = dayjs(d).diff(dayjs(t.date), 'day');
+                        const range = t.range && t.range > 1 ? t.range : 1;
+
+                        if (diff >= 0 && diff < range) {
+                            // 表示用にオブジェクトを拡張（元のオブジェクトは変更しない）
+                            acc.push({
+                                ...t,
+                                currentDay: diff + 1,
+                                totalDays: range
+                            });
+                        }
+                        return acc;
+                    }, []);
+                };
+                
                 const getMemoTasks = (c) => tasks.value.filter(t => t.columnId === c && !t.date && !t.inLibrary);
                 const getLibraryTasks = (c) => tasks.value.filter(t => t.columnId === c && t.inLibrary === true);
                 const getTaskSets = (c) => taskSets.value.filter(s => s.columnId === c);
