@@ -148,16 +148,14 @@
                 <!-- Back to Today Button -->
                 <button @click="scrollToToday" class="absolute bottom-6 right-6 z-[60] bg-slate-800 text-white shadow-lg hover:bg-slate-700 w-12 h-12 rounded-full flex items-center justify-center transition-all hover:scale-105 border border-slate-600 group" title="今日に戻る">
                     <div class="flex flex-col items-center leading-none">
-                        <i class="ph ph-calendar-check text-xl mb-0.5"></i>
-                        <span class="text-[9px] font-bold">Today</span>
+                        <span class="text-[10px] font-bold">Today</span>
                     </div>
                 </button>
 
                 <div class="flex-1 overflow-auto relative custom-scrollbar">
                     
                     <!-- Sticky Header Area -->
-                    <!-- Boundary Improvement: Added border-b-2 and border-slate-300 for clearer separation -->
-                    <div class="sticky-top-area shadow-lg border-b-2 border-slate-300 min-w-full z-30">
+                    <div class="sticky-top-area shadow-md border-b-2 border-slate-300 min-w-full z-30">
                         <!-- Column Headers -->
                         <div class="flex border-b border-border bg-white">
                             <div class="w-[60px] shrink-0 border-r border-border bg-slate-50 flex items-end justify-center pb-2 sticky-date z-40 cursor-pointer hover:bg-slate-100 transition-colors group/date" title="日付ジャンプ" @click="openDatePicker">
@@ -170,7 +168,7 @@
                                         <div class="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 column-handle shrink-0 transition-colors">
                                             <i class="ph ph-dots-six-vertical text-lg"></i>
                                         </div>
-                                        <input v-model="col.title" @change="updateColumn(col)" class="bg-transparent font-bold text-slate-700 text-sm truncate w-full focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-2 py-0.5 transition-all">
+                                        <input v-model="col.title" @change="updateColumn(col)" class="bg-transparent font-bold text-slate-700 text-base truncate w-full focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 rounded px-2 py-0.5 transition-all">
                                     </div>
                                 </div>
                             </div>
@@ -180,11 +178,11 @@
                         <div class="flex border-b border-slate-200 bg-white relative z-30 shadow-sm">
                             <div class="w-[60px] shrink-0 border-r border-border bg-slate-50 sticky-date z-40"></div>
                             <div v-for="col in columns" :key="col.id" class="flex-1 min-w-[250px] border-r border-border p-1.5">
-                                <div class="text-[9px] font-bold text-slate-400 uppercase mb-1 pl-1 tracking-wide flex items-center gap-1">
-                                    <i class="ph ph-note-pencil"></i> メモ
+                                <div class="text-[9px] font-bold text-slate-400 mb-1 pl-1 tracking-wide flex items-center gap-1">
+                                     メモ
                                 </div>
-                                <div :id="`memo-area-${col.id}`" class="min-h-[28px] space-y-1 p-0.5 transition-all rounded-md" data-type="memo" :data-col="col.id">
-                                    <div v-for="task in getMemoTasks(col.id)" :key="task.id" :data-id="task.id" class="task-card rounded-md px-2 py-1.5 text-[11px] cursor-grab group/card relative flex items-center justify-between gap-1 border border-slate-200 hover:border-primary/40 bg-white shadow-sm" @click="openTaskModal(null, col.id, null, task)">
+                                <div :id="`memo-area-${col.id}`" class="min-h-[10px] space-y-1 p-0.5 transition-all rounded-md" data-type="memo" :data-col="col.id">
+                                    <div v-for="task in getMemoTasks(col.id)" :key="task.id" :data-id="task.id" class="task-card rounded-md px-2 py-1.5 text-xs cursor-grab group/card relative flex items-center justify-between gap-1 border border-slate-200 hover:border-primary/40 bg-white shadow-sm" @click="openTaskModal(null, col.id, null, task)">
                                         <div class="font-medium text-slate-700 leading-tight flex-1 truncate">{{ task.title }}</div>
                                         <div class="flex gap-1 shrink-0 opacity-0 group-hover/card:opacity-100 transition-opacity">
                                             <button @click.stop="quickAdd(task)" title="今日に追加" class="text-slate-400 hover:text-primary"><i class="ph ph-plus-circle text-sm"></i></button>
@@ -192,7 +190,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <button @click="openMemoModal(col)" class="w-full py-0.5 text-center text-slate-400 border border-dashed border-slate-200 hover:border-primary/50 hover:text-primary hover:bg-slate-50 rounded text-[10px] transition-all mt-1" title="メモを追加">
+                                <button @click="openMemoModal(col)" class="w-full py-0.5 text-center text-slate-500 border border-dashed border-slate-300 hover:border-primary/50 hover:text-primary hover:bg-slate-100 rounded text-[10px] transition-all mt-1" title="メモを追加">
                                     <i class="ph ph-plus"></i>
                                 </button>
                             </div>
@@ -220,9 +218,8 @@
                                             <span :class="{'text-amber-900': task.isGoal}">{{ task.title }}</span>
                                             <span v-if="task.range > 1" class="text-[10px] text-slate-400 bg-slate-100 px-1 rounded flex items-center whitespace-nowrap"><i class="ph ph-arrows-left-right mr-0.5"></i> {{task.range}}日</span>
                                         </div>
-                                        <!-- Hover Controls Added (Return & Delete) -->
+                                        <!-- Hover Controls (Only Delete) -->
                                         <div class="flex justify-end gap-1 opacity-0 group-hover/card:opacity-100 transition-opacity absolute bottom-1 right-1 bg-white/95 backdrop-blur-sm rounded-lg shadow-sm border border-slate-200 p-0.5">
-                                            <button @click.stop="returnToLibrary(task)" title="メモに戻す" class="text-slate-400 hover:text-slate-600 text-xs p-1 rounded hover:bg-slate-100"><i class="ph ph-arrow-u-up-left text-sm"></i></button>
                                             <button @click.stop="deleteTask(task.id)" title="削除" class="text-slate-400 hover:text-red-500 text-xs p-1 rounded hover:bg-red-50"><i class="ph ph-trash text-sm"></i></button>
                                         </div>
                                     </div>
@@ -252,14 +249,14 @@
                 
                 <div class="flex-1 overflow-y-auto custom-scrollbar p-5 space-y-8 bg-slate-50">
                     <div v-for="col in columns" :key="col.id" class="space-y-2.5">
-                        <!-- Accordion Header: uppercase class removed -->
+                        <!-- Accordion Header: uppercase removed -->
                         <div @click="toggleProject(col.id)" class="flex items-center justify-between text-[11px] font-bold text-slate-500 tracking-wider sticky top-0 bg-slate-50 py-1.5 z-10 border-b border-slate-200 cursor-pointer hover:text-primary transition">
                             <span class="truncate pr-2">{{ col.title }}</span>
                             <i class="ph" :class="expandedProjects[col.id] ? 'ph-caret-down' : 'ph-caret-right'"></i>
                         </div>
                         
                         <!-- Accordion Content -->
-                        <div v-show="expandedProjects[col.id]" class="space-y-2.5" :id="`library-${col.id}`" data-type="library" :data-col="col.id">
+                        <div v-show="expandedProjects[col.id]" class="space-y-2" :id="`library-${col.id}`" data-type="library" :data-col="col.id">
                             <!-- Sets -->
                             <div v-for="set in getTaskSets(col.id)" :key="set.id" :data-id="set.id" @click="confirmApplySet(set)" class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:border-primary/40 hover:shadow-md cursor-pointer transition flex items-center justify-between gap-3 group relative overflow-hidden">
                                 <div class="flex items-center gap-3 overflow-hidden relative z-10">
@@ -353,7 +350,7 @@
         <!-- Memo Modal -->
         <transition name="modal">
             <div v-if="modals.memo" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" @click.self="modals.memo = false">
-                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-sm">
+                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
                     <div class="p-5 space-y-4">
                         <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
                             <i class="ph ph-note-pencil text-slate-400"></i> メモ追加: {{ memoForm.columnTitle }}
@@ -371,7 +368,7 @@
         <!-- Library Add Modal -->
         <transition name="modal">
             <div v-if="modals.libraryAdd" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" @click.self="modals.libraryAdd = false">
-                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-sm">
+                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
                     <div class="p-5 space-y-4">
                         <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
                             <i class="ph ph-books text-slate-400"></i> ライブラリに追加
@@ -392,7 +389,7 @@
         <!-- Bulk Add Modal -->
         <transition name="modal">
             <div v-if="modals.bulkAdd" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" @click.self="modals.bulkAdd = false">
-                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-md h-[500px] flex flex-col">
+                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-md h-[500px] flex flex-col overflow-hidden">
                     <div class="h-12 border-b border-slate-100 flex items-center justify-between px-4 shrink-0">
                         <span class="font-bold text-slate-700 text-sm">一括登録</span>
                         <button @click="modals.bulkAdd = false" class="text-slate-400 hover:text-slate-600"><i class="ph ph-x text-lg"></i></button>
@@ -414,7 +411,7 @@
         <!-- Set Manager Modal -->
         <transition name="modal">
             <div v-if="modals.setManager" class="fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4 backdrop-blur-sm" @click.self="modals.setManager = false">
-                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-3xl h-[600px] flex flex-col">
+                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-3xl h-[600px] flex flex-col overflow-hidden">
                     <div class="h-14 border-b border-slate-100 flex items-center justify-between px-5 shrink-0 bg-slate-50">
                         <h2 class="font-bold text-slate-700">セット管理</h2>
                         <button @click="modals.setManager = false" class="text-slate-400 hover:text-slate-600"><i class="ph ph-x text-lg"></i></button>
@@ -495,10 +492,10 @@
         <!-- Apply Set Modal -->
         <transition name="modal">
             <div v-if="modals.applySet" class="fixed inset-0 bg-black/50 z-[70] flex items-center justify-center p-4 backdrop-blur-sm" @click.self="modals.applySet = false">
-                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-sm">
+                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden">
                     <div class="p-5 space-y-4">
                         <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
-                            <i class="ph ph-calendar-plus text-primary"></i> セットを展開
+                            <i class="ph ph-calendar-plus text-primary"></i> タスクセットを追加
                         </h3>
                         <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 text-xs text-slate-600">
                             <span class="font-bold">{{ selectedSet?.title }}</span> をカレンダーに追加します。
@@ -511,7 +508,7 @@
                     </div>
                     <div class="p-3 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
                         <button @click="modals.applySet = false" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-lg">キャンセル</button>
-                        <button @click="applySetToCalendar" class="px-4 py-2 text-xs font-medium bg-primary text-white hover:bg-blue-600 rounded-lg shadow-sm">展開</button>
+                        <button @click="applySetToCalendar" class="px-4 py-2 text-xs font-medium bg-primary text-white hover:bg-blue-600 rounded-lg shadow-sm">追加</button>
                     </div>
                 </div>
             </div>
@@ -520,7 +517,7 @@
         <!-- Delete Confirm Modal -->
         <transition name="modal">
             <div v-if="modals.deleteConfirm" class="fixed inset-0 bg-black/50 z-[80] flex items-center justify-center p-4 backdrop-blur-sm" @click.self="modals.deleteConfirm = false">
-                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-xs">
+                <div class="modal-card bg-white rounded-xl shadow-2xl w-full max-w-xs overflow-hidden">
                     <div class="p-6 text-center">
                         <div class="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-3">
                             <i class="ph ph-trash text-2xl"></i>
@@ -686,7 +683,10 @@
                                 group: 'tasks', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
                                 onAdd: (evt) => {
                                     if (evt.from.getAttribute('data-type') === 'library') {
-                                        evt.item.remove();
+                                        // 変更点: remove()ではなくdisplay:noneにする
+                                        // evt.item.remove(); 
+                                        evt.item.style.display = 'none';
+                                        
                                         const originalId = evt.item.getAttribute('data-id');
                                         const s = tasks.value.find(t => t.id === originalId);
                                         if (s) db.collection("tasks").add({ title: s.title, columnId: col.id, date: day.dateStr, range: s.range, isGoal: false, inLibrary: false, createdAt: new Date() });
