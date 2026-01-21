@@ -270,16 +270,17 @@
                         
                         <!-- Accordion Content -->
                         <div v-show="expandedProjects[col.id]" class="space-y-2" :id="`library-${col.id}`" data-type="library" :data-col="col.id">
-                            <!-- Sets -->
-                            <div v-for="set in getTaskSets(col.id)" :key="set.id" :data-id="set.id" @click="confirmApplySet(set)" class="bg-white border border-slate-200 rounded-xl p-2 shadow-sm hover:border-primary/40 hover:shadow-md cursor-pointer transition flex items-center justify-between gap-3 group relative overflow-hidden">
+                            <!-- Sets (Draggable) -->
+                            <div v-for="set in getTaskSets(col.id)" :key="set.id" :data-id="set.id" data-type="set" @click="editSet(set)" class="bg-white border border-slate-200 rounded-xl p-2 shadow-sm hover:border-primary/40 hover:shadow-md cursor-pointer transition flex items-center justify-between gap-3 group relative overflow-hidden">
                                 <div class="flex items-center gap-3 overflow-hidden relative z-10">
                                     <div class="w-8 h-8 rounded-lg bg-blue-50 text-primary flex items-center justify-center shrink-0 border border-blue-100"><i class="ph ph-stack-simple text-lg"></i></div>
                                     <div class="flex flex-col overflow-hidden">
                                         <div class="text-xs font-bold text-slate-700 truncate">{{ set.title }}</div>
                                     </div>
                                 </div>
-                                <div @click.stop="openSetManagerModal" class="w-7 h-7 rounded-full bg-slate-50 text-slate-400 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all shadow-sm border border-slate-100 relative z-10">
-                                    <i class="ph ph-pencil-simple text-sm"></i>
+                                <!-- Modified hover action -->
+                                <div class="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity relative z-10">
+                                    <button @click.stop="confirmApplySet(set)" title="今日に追加" class="text-slate-400 hover:text-primary"><i class="ph ph-plus-circle text-lg"></i></button>
                                 </div>
                             </div>
 
@@ -318,7 +319,7 @@
                     <div class="p-5 space-y-4">
                         <div>
                             <label class="text-xs font-bold text-slate-500 mb-1 block">タイトル</label>
-                            <input ref="taskTitleInput" v-model="taskForm.title" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="タスク名を入力..." @keyup.enter="saveTask">
+                            <input ref="taskTitleInput" v-model="taskForm.title" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="タスク名を入力...">
                         </div>
                         <!-- Library items only show title and project selection -->
                         <div class="grid grid-cols-2 gap-3" v-if="!taskForm.inLibrary">
@@ -346,14 +347,10 @@
                                 <label class="text-xs font-bold text-slate-500 mb-1 block">期間 (日数)</label>
                                 <input type="number" min="1" v-model="taskForm.range" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                             </div>
-                            <div class="flex items-end pb-2">
-                                <label class="flex items-center gap-2 cursor-pointer select-none">
-                                    <input type="checkbox" v-model="taskForm.isGoal" class="w-4 h-4 text-amber-500 rounded border-slate-300 focus:ring-amber-500">
-                                    <span class="text-sm text-slate-600">ゴール設定</span>
-                                </label>
-                            </div>
+                            <!-- Goal checkbox removed -->
                         </div>
-                        <div v-if="!editingTask && !taskForm.inLibrary" class="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                        <!-- Show Save to Library checkbox if not in library mode (Calendar Task) -->
+                        <div v-if="!taskForm.inLibrary" class="bg-slate-50 p-3 rounded-lg border border-slate-100">
                             <label class="flex items-center gap-2 cursor-pointer select-none">
                                 <input type="checkbox" v-model="taskForm.saveToLibrary" class="w-4 h-4 text-primary rounded border-slate-300 focus:ring-primary">
                                 <span class="text-xs font-medium text-slate-600">ライブラリにも保存する</span>
@@ -377,7 +374,7 @@
                         <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
                             <i class="ph ph-note-pencil text-slate-400"></i> メモ追加: {{ memoForm.columnTitle }}
                         </h3>
-                        <input ref="memoTitleInput" v-model="memoForm.title" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="内容を入力..." @keyup.enter="saveMemo">
+                        <input ref="memoTitleInput" v-model="memoForm.title" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="内容を入力...">
                     </div>
                     <div class="p-3 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
                         <button @click="modals.memo = false" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-lg">キャンセル</button>
@@ -395,7 +392,7 @@
                         <h3 class="font-bold text-slate-700 text-sm flex items-center gap-2">
                             <i class="ph ph-books text-slate-400"></i> ライブラリに追加
                         </h3>
-                        <input ref="libraryTitleInput" v-model="libraryForm.title" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="タスク名..." @keyup.enter="saveLibraryItem">
+                        <input ref="libraryTitleInput" v-model="libraryForm.title" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="タスク名...">
                         <select v-model="libraryForm.columnId" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-slate-600 bg-white">
                             <option v-for="col in columns" :key="col.id" :value="col.id">{{ col.title }}</option>
                         </select>
@@ -688,13 +685,6 @@
                 };
 
                 const scrollToToday = () => {
-                    // Previous logic: center today
-                    // const todayStr = dayjs().format('YYYY-MM-DD');
-                    // const el = document.getElementById(`day-${todayStr}`);
-                    // if (el) {
-                    //     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // }
-
                     // New logic: match initCalendar (scroll to yesterday at top)
                     const yesterdayStr = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
                     const el = document.getElementById(`day-${yesterdayStr}`);
@@ -767,12 +757,38 @@
                             if (el) new Sortable(el, {
                                 group: 'tasks', animation: 150, ghostClass: 'sortable-ghost', delay: 100, delayOnTouchOnly: true,
                                 onAdd: (evt) => {
-                                    if (evt.from.getAttribute('data-type') === 'library') {
-                                        // 変更点: remove()ではなくdisplay:noneにする
-                                        // evt.item.remove(); 
-                                        evt.item.style.display = 'none';
+                                    const itemType = evt.item.getAttribute('data-type');
+                                    const originalId = evt.item.getAttribute('data-id');
+                                    
+                                    if (itemType === 'set') {
+                                        // Set Drop Logic
+                                        evt.item.style.display = 'none'; // Hide ghost item
+                                        const set = taskSets.value.find(s => s.id === originalId);
                                         
-                                        const originalId = evt.item.getAttribute('data-id');
+                                        if (set && set.tasks) {
+                                            const batch = db.batch();
+                                            // Calculate dates based on drop target (goal date)
+                                            const goalDate = dayjs(day.dateStr);
+                                            
+                                            set.tasks.forEach(t => {
+                                                const d = t.isGoal ? goalDate : goalDate.subtract(parseInt(t.offset), 'day');
+                                                const newDocRef = db.collection("tasks").doc();
+                                                batch.set(newDocRef, {
+                                                    title: t.title,
+                                                    columnId: col.id, // Drop target column
+                                                    date: d.format('YYYY-MM-DD'),
+                                                    range: 1,
+                                                    isGoal: t.isGoal,
+                                                    inLibrary: false,
+                                                    createdAt: new Date()
+                                                });
+                                            });
+                                            batch.commit();
+                                        }
+                                    } else if (evt.from.getAttribute('data-type') === 'library') {
+                                        // Normal Task Library Drop Logic
+                                        evt.item.style.display = 'none'; // Hide ghost
+                                        
                                         const s = tasks.value.find(t => t.id === originalId);
                                         if (s) db.collection("tasks").add({ title: s.title, columnId: col.id, date: day.dateStr, range: s.range, isGoal: false, inLibrary: false, createdAt: new Date() });
                                     }
@@ -812,22 +828,45 @@
                 };
                 
                 const saveTask = async () => {
-                    if (!taskForm.value.title || !taskForm.value.title.trim()) return;
-                    const data = { ...taskForm.value, range: parseInt(taskForm.value.range), inLibrary: false };
-                    delete data.saveToLibrary;
+                    const title = taskForm.value.title ? taskForm.value.title.trim() : '';
+                    if (!title) return;
                     
-                    // If editing a library item, preserve inLibrary status
-                    if (taskForm.value.inLibrary) {
-                        data.inLibrary = true;
+                    const rangeVal = parseInt(taskForm.value.range);
+                    const range = isNaN(rangeVal) || rangeVal < 1 ? 1 : rangeVal;
+                    
+                    const baseData = {
+                        title: title,
+                        columnId: taskForm.value.columnId,
+                        range: range,
+                        isGoal: !!taskForm.value.isGoal,
+                        createdAt: new Date()
+                    };
+
+                    // 1. Create/Update the main task (Calendar or Memo)
+                    const mainTaskData = {
+                        ...baseData,
+                        date: taskForm.value.date || null, // null if empty string
+                        inLibrary: !!taskForm.value.inLibrary // Preserve if editing library item
+                    };
+
+                    if (editingTask.value) {
+                        await db.collection("tasks").doc(editingTask.value.id).update(mainTaskData);
+                    } else {
+                        // Creating new task
+                        mainTaskData.inLibrary = false; // Force false for new calendar/memo tasks
+                        await db.collection("tasks").add(mainTaskData);
                     }
 
-                    if (editingTask.value) { await db.collection("tasks").doc(editingTask.value.id).update(data); }
-                    else {
-                        const newDoc = { ...data, createdAt: new Date() };
-                        if (!newDoc.date) newDoc.date = null;
-                        const res = await db.collection("tasks").add(newDoc);
-                        if (taskForm.value.saveToLibrary && taskForm.value.date) { await db.collection("tasks").add({ ...newDoc, date: null, inLibrary: true }); }
+                    // 2. Save to Library if checked (Now applies to both new and edited tasks)
+                    if (taskForm.value.saveToLibrary && !taskForm.value.inLibrary) {
+                        const libraryData = {
+                            ...baseData,
+                            date: null,
+                            inLibrary: true
+                        };
+                        await db.collection("tasks").add(libraryData);
                     }
+                    
                     modals.value.task = false;
                 };
 
@@ -869,6 +908,13 @@
                 const openSetManagerModal = () => { modals.value.setManager = true; selectedSet.value = null; };
                 const createNewSet = () => { selectedSet.value = { title: '新しいセット', columnId: columns.value[0]?.id, tasks: [{ title: 'ゴール', isGoal: true, columnId: columns.value[0]?.id, offset: 0 }] }; setupSetSortable(); };
                 const selectSet = (set) => { selectedSet.value = JSON.parse(JSON.stringify(set)); setupSetSortable(); };
+                
+                // Helper to edit set from card click
+                const editSet = (set) => {
+                    modals.value.setManager = true;
+                    selectSet(set);
+                };
+
                 const setupSetSortable = () => { nextTick(() => { const el = document.getElementById('sortable-set-list'); if (el) new Sortable(el, { animation: 150, handle: '.handle', onEnd: (evt) => { const item = selectedSet.value.tasks.splice(evt.oldIndex, 1)[0]; selectedSet.value.tasks.splice(evt.newIndex, 0, item); }}); }); };
                 const addTaskToSet = () => selectedSet.value.tasks.push({ title: '', isGoal: false, columnId: selectedSet.value.columnId, offset: 1 });
                 const setGoal = (idx) => selectedSet.value.tasks.forEach((t, i) => { t.isGoal = (i === idx); if(t.isGoal) t.offset = 0; });
@@ -899,7 +945,7 @@
                     selectedSet, applySetDate, deleteTarget, deleteAction, expandedProjects,
                     headerContainer, calendarContainer, syncScroll,
                     openTaskModal, saveTask, deleteTask, openMemoModal, saveMemo, openLibraryAddModal, saveLibraryItem,
-                    openBulkAddModal, saveBulkTasks, openSetManagerModal, createNewSet, selectSet, addTaskToSet, setGoal, saveSet, deleteSet,
+                    openBulkAddModal, saveBulkTasks, openSetManagerModal, createNewSet, selectSet, editSet, addTaskToSet, setGoal, saveSet, deleteSet,
                     confirmApplySet, applySetToCalendar, updateColumn, quickAdd, returnToLibrary, toggleProject,
                     getTasksForDay, getMemoTasks, getLibraryTasks, getLibraryItems, getTaskSets, getColumnTitle,
                     isToday, getDayDiff, openDatePicker, onDateJump, scrollToToday, handleTitleClick, confirmDelete, executeDelete
